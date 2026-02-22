@@ -1,8 +1,7 @@
 import {
   collection,
   addDoc,
-  serverTimestamp,
-  type DocumentReference
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from './config';
 
@@ -11,15 +10,16 @@ export const sendMessage = async (
   text: string,
   senderId: string,
   senderName: string,
-  mediaUrl?: string
-): Promise<DocumentReference> => {
+  senderAvatar?: string | null,
+  imageUrl?: string
+) => {
   const messagesRef = collection(db, 'rooms', roomId, 'messages');
-
   return addDoc(messagesRef, {
     text,
     senderId,
     senderName,
+    senderAvatar: senderAvatar || null,
+    imageUrl: imageUrl || null,
     createdAt: serverTimestamp(),
-    ...(mediaUrl && { imageUrl: mediaUrl })
   });
 };

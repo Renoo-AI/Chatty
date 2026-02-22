@@ -7,6 +7,7 @@ export interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (email: string, pass: string) => Promise<void>;
+  signInAnonymous: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 

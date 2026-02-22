@@ -6,6 +6,7 @@ import {
   signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  signInAnonymously as firebaseSignInAnonymously,
   signOut as firebaseSignOut
 } from 'firebase/auth';
 import { auth } from '../services/firebase/config';
@@ -52,6 +53,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signInAnonymous = async () => {
+    try {
+      await firebaseSignInAnonymously(auth);
+    } catch (error) {
+      console.error("Error signing in anonymously", error);
+      throw error;
+    }
+  };
+
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
@@ -67,6 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signInWithGoogle,
       signInWithEmail,
       signUpWithEmail,
+      signInAnonymous,
       signOut
     }}>
       {!loading && children}

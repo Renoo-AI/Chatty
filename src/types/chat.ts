@@ -5,14 +5,13 @@ export interface Message {
   text: string;
   senderId: string;
   senderName: string;
-  senderAvatar?: string;
+  senderAvatar?: string | null;
+  imageUrl?: string | null;
   createdAt: Timestamp;
-  imageUrl?: string;
-  fileUrl?: string;
 }
 
 export interface ChatRoom {
   id: string;
   name: string;
-  createdAt: Timestamp;
+  description?: string;
 }
