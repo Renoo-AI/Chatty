@@ -6,6 +6,7 @@ import {
   signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  updateProfile,
   signInAnonymously as firebaseSignInAnonymously,
   signOut as firebaseSignOut
 } from 'firebase/auth';
@@ -44,9 +45,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signUpWithEmail = async (email: string, pass: string) => {
+  const signUpWithEmail = async (email: string, pass: string, displayName?: string, photoURL?: string) => {
     try {
-      await createUserWithEmailAndPassword(auth, email, pass);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+      if (displayName || photoURL) {
+        await updateProfile(userCredential.user, {
+          displayName: displayName || null,
+          photoURL: photoURL || null
+        });
+        // Force update user state as updateProfile doesn't always trigger onAuthStateChanged immediately
+        setUser({
+          ...userCredential.user,
+          displayName: displayName || null,
+          photoURL: photoURL || null
+        });
+      }
     } catch (error) {
       console.error("Error signing up with email", error);
       throw error;

@@ -26,6 +26,8 @@ export const useChatMessages = (roomId: string) => {
   useEffect(() => {
     if (!roomId) return;
 
+    let initialAnchorSet = false;
+
     setLoading(true);
     const messagesRef = collection(db, 'rooms', roomId, 'messages');
     const q = query(
@@ -41,8 +43,9 @@ export const useChatMessages = (roomId: string) => {
       })) as Message[];
 
       // When the listener first fires, set the anchor for pagination
-      if (snapshot.docs.length > 0 && !lastVisible) {
+      if (snapshot.docs.length > 0 && !initialAnchorSet) {
         setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+        initialAnchorSet = true;
       }
 
       // Update messages. We merge with existing historical messages if any.
@@ -53,9 +56,10 @@ export const useChatMessages = (roomId: string) => {
         const historical = prev.filter(p => !fetchedMessages.find(f => f.id === p.id));
         const combined = [...fetchedMessages, ...historical];
         // Sort combined to ensure order (newest first)
+        // For pending timestamps, we use current time to keep them at the bottom
         return combined.sort((a, b) => {
-          const timeA = a.createdAt?.toMillis?.() || 0;
-          const timeB = b.createdAt?.toMillis?.() || 0;
+          const timeA = a.createdAt?.toMillis?.() || Date.now();
+          const timeB = b.createdAt?.toMillis?.() || Date.now();
           return timeB - timeA;
         });
       });

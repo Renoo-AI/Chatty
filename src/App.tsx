@@ -19,13 +19,35 @@ function App() {
   const [inputText, setInputText] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const prevMessagesLength = useRef(0)
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior })
   }
 
   useEffect(() => {
-    scrollToBottom()
+    const container = scrollRef.current
+    if (!container) return
+
+    const isInitialLoad = prevMessagesLength.current === 0 && messages.length > 0
+    const hasNewMessage = messages.length > prevMessagesLength.current
+
+    // Detect if we added messages to the top (load more) or bottom (new message)
+    // displayMessages is chronological [oldest, ..., newest]
+    // So if the last message ID changed, it's a new message at the bottom
+    const lastMessageChanged = messages.length > 0 &&
+      (prevMessagesLength.current === 0 || messages[messages.length - 1].id !== messages[prevMessagesLength.current - 1]?.id)
+
+    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 150
+
+    if (isInitialLoad) {
+      scrollToBottom('auto')
+    } else if (hasNewMessage && lastMessageChanged && isAtBottom) {
+      scrollToBottom('smooth')
+    }
+
+    prevMessagesLength.current = messages.length
   }, [messages])
 
   const handleSend = async (e: React.FormEvent) => {
@@ -70,6 +92,8 @@ function App() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [error, setError] = useState('')
 
@@ -78,12 +102,30 @@ function App() {
     setError('')
     try {
       if (isSignUp) {
-        await signUpWithEmail(email, password)
+        await signUpWithEmail(email, password, displayName, avatarUrl)
       } else {
         await signInWithEmail(email, password)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed')
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    setError('')
+    try {
+      await signInWithGoogle()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Google Sign-In failed')
+    }
+  }
+
+  const handleAnonymousSignIn = async () => {
+    setError('')
+    try {
+      await signInAnonymous()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Guest Sign-In failed')
     }
   }
 
@@ -95,6 +137,23 @@ function App() {
           <p>Connect instantly with your team</p>
 
           <form onSubmit={handleEmailAuth} className="email-login-form">
+            {isSignUp && (
+              <>
+                <input
+                  type="text"
+                  placeholder="Full Name"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  required
+                />
+                <input
+                  type="url"
+                  placeholder="Avatar URL (Optional)"
+                  value={avatarUrl}
+                  onChange={(e) => setAvatarUrl(e.target.value)}
+                />
+              </>
+            )}
             <input
               type="email"
               placeholder="Email"
@@ -118,10 +177,10 @@ function App() {
           <div className="divider"><span>OR</span></div>
 
           <div className="social-login">
-            <button onClick={signInWithGoogle} className="google-btn">
+            <button onClick={handleGoogleSignIn} className="google-btn">
               Sign in with Google
             </button>
-            <button onClick={signInAnonymous} className="guest-btn">
+            <button onClick={handleAnonymousSignIn} className="guest-btn">
               Continue as Guest
             </button>
           </div>
@@ -156,7 +215,7 @@ function App() {
           </div>
         </header>
 
-        <main className="messages-list">
+        <main className="messages-list" ref={scrollRef}>
           {hasMore && (
             <button className="load-more" onClick={loadMore} disabled={loadingMore}>
               {loadingMore ? 'Loading...' : 'Load older messages'}

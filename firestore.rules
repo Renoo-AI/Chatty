@@ -13,19 +13,23 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    // Rooms: Anyone authenticated can read, only admins (or specific logic) can create/update
+    // Rooms: Anyone authenticated can read
     match /rooms/{roomId} {
       allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated(); // Simplified for this exercise
+      // Only admins can manage rooms in this demo
+      allow write: if false;
 
       // Messages sub-collection
       match /messages/{messageId} {
         allow read: if isAuthenticated();
         allow create: if isAuthenticated()
           && request.resource.data.senderId == request.auth.uid
-          && request.resource.data.createdAt == request.time; // serverTimestamp() enforcement
+          && request.resource.data.text is string
+          && request.resource.data.text.size() <= 1000
+          && request.resource.data.createdAt == request.time;
 
-        allow update, delete: if isAuthenticated() && isOwner(resource.data.senderId);
+        // Messages are immutable once sent for security and audit
+        allow update, delete: if false;
       }
     }
 
